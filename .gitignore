@@ -1,0 +1,30 @@
+# Node 和 Expo 生成物
+node_modules/
+.expo/
+.expo-shared/
+dist/
+coverage/
+*.tsbuildinfo
+expo-env.d.ts
+
+# Expo Prebuild 生成的根目录工程
+/ios/
+/android/
+
+# 本地环境变量
+.env
+.env.*
+!.env.example
+
+# 签名与分发凭据
+*.jks
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+
+# 编辑器、系统文件和日志
+.idea/
+.DS_Store
+Thumbs.db
+*.log

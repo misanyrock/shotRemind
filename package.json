@@ -1,0 +1,37 @@
+{
+  "name": "shot-remind",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "prebuild": "expo prebuild --template expo-template-bare-minimum@sdk-56 --no-install",
+    "start": "expo start --dev-client",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/datetimepicker": "9.1.0",
+    "expo": "~56.0.24",
+    "expo-dev-client": "~56.0.28",
+    "expo-file-system": "~56.0.11",
+    "expo-image-picker": "~56.0.25",
+    "expo-notifications": "~56.0.26",
+    "expo-status-bar": "~56.0.4",
+    "expo-system-ui": "~56.0.5",
+    "react": "19.2.3",
+    "react-native": "0.85.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-svg": "15.15.4"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/misanyrock/shotRemind.git"
+  }
+}
