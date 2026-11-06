@@ -25,7 +25,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "选择截图以识别提醒内容。",
+          "photosPermission": "从相册选择图片以创建提醒或遮挡隐私。",
           "cameraPermission": false,
           "microphonePermission": false
         }

@@ -9,6 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import ShotOcr from './modules/shot-ocr';
+import { PrivacyScreen } from './src/PrivacyScreen';
 import { dateLabel, extractSuggestions, nextHour, timeLabel, type Suggestion } from './src/recognize';
 import {
   createReminder, finishReminder, imageUri, loadReminders, ReminderPermissionError,
@@ -75,6 +76,7 @@ function ReminderApp() {
   const [picker, setPicker] = useState<'date' | 'time' | null>(null);
   const [preview, setPreview] = useState<{ uri?: string; sample?: boolean } | null>(null);
   const [openedId, setOpenedId] = useState<string | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
 
   useEffect(() => {
     if (page.kind === 'home') return;
@@ -109,12 +111,12 @@ function ReminderApp() {
   }, []);
 
   useEffect(() => {
-    if (loading || loadError || !openedId || busy) return;
+    if (loading || loadError || !openedId || busy || privacyOpen) return;
     if (reminders.some(item => item.id === openedId)) setPage({ kind: 'detail', id: openedId });
     else Alert.alert('找不到提醒', '这条提醒可能已被删除。');
     setOpenedId(null);
     Notifications.clearLastNotificationResponse();
-  }, [busy, loading, loadError, openedId, reminders]);
+  }, [busy, loading, loadError, openedId, privacyOpen, reminders]);
 
   function goHome() {
     setPicker(null);
@@ -246,6 +248,15 @@ function ReminderApp() {
                 </Pressable>
               </View>
             </>}
+            <Pressable style={[s.source, s.privacyEntry]} accessibilityRole="button" disabled={busy}
+              onPress={() => setPrivacyOpen(true)}>
+              <View style={s.emptyIcon}><Icon name="shield" color={colors.lime} size={20} /></View>
+              <View style={s.flex}>
+                <Text style={s.cardTitle}>发图前遮隐私</Text>
+                <Text style={s.caption}>遮住手机号、地址和姓名再分享</Text>
+              </View>
+              <Icon name="chevron" color={colors.muted} size={18} />
+            </Pressable>
             <View style={s.sectionHeader}>
               <Text accessibilityRole="header" style={s.sectionTitle}>{filter === 'active' ? '待办提醒' : '已完成'}</Text>
               <Text style={s.count}>{String(visible.length).padStart(2, '0')}</Text>
@@ -364,6 +375,7 @@ function ReminderApp() {
           </View>
         </>}
       </KeyboardAvoidingView>
+      {privacyOpen && <PrivacyScreen onClose={() => setPrivacyOpen(false)} />}
       <Modal visible={Boolean(preview)} animationType="fade" onRequestClose={() => setPreview(null)}>
         <SafeAreaView style={s.safe}>
           <View style={s.screenHeader}>
@@ -387,6 +399,7 @@ const s = StyleSheet.create({
   brandText: { color: colors.text, fontSize: 19, fontWeight: '800' },
   privacy: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 6, borderRadius: 99, borderWidth: 1, borderColor: colors.border },
   privacyText: { color: colors.muted, fontSize: 11, fontWeight: '600' },
+  privacyEntry: { marginTop: 10 },
   homeBody: { paddingHorizontal: 22, paddingBottom: 20 },
   hero: { padding: 19, borderRadius: 26, backgroundColor: colors.lime, overflow: 'hidden' },
   heroArt: { position: 'absolute', right: 4, top: 28, opacity: 0.88 },
