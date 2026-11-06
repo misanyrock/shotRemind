@@ -3,7 +3,7 @@
     "name": "截个提醒",
     "slug": "shot-remind",
     "version": "1.0.0",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app-icon.png",
     "scheme": "shotremind",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#131510",
@@ -25,8 +25,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "从相册选择图片以创建提醒或遮挡隐私。",
-          "cameraPermission": false,
+          "photosPermission": "从相册选择图片以创建提醒、遮挡隐私或保存办事资料。",
+          "cameraPermission": "给物品拍照，记录它的存放位置。",
           "microphonePermission": false
         }
       ],
@@ -36,6 +36,23 @@
           "color": "#DFFF68"
         }
       ],
+      [
+        "expo-sharing",
+        {
+          "android": {
+            "enabled": true,
+            "singleShareMimeTypes": ["image/*"]
+          },
+          "ios": {
+            "enabled": true,
+            "appGroupId": "group.app.shotremind.mobile",
+            "activationRule": {
+              "supportsImageWithMaxCount": 1
+            }
+          }
+        }
+      ],
+      "./plugins/with-ios-share-name",
       "./plugins/with-ios-pod-deployment-target",
       "./plugins/with-ios-scene"
     ]

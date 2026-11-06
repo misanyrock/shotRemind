@@ -105,7 +105,7 @@ export async function createReminder(draft: Draft, reminders: Reminder[]) {
       const extension = draft.imageExtension?.match(/^[a-z0-9]{2,5}$/i)?.[0] ?? 'jpg';
       reminder.imageName = id + '.' + extension;
       file = new File(folder, reminder.imageName);
-      new File(draft.imageUri).copy(file);
+      await new File(draft.imageUri).copy(file);
     }
     scheduledId = await schedule(reminder);
     const next = [...reminders, reminder];

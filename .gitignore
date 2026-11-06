@@ -10,6 +10,7 @@ expo-env.d.ts
 # Expo Prebuild 生成的根目录工程
 /ios/
 /android/
+.gradle/
 
 # 本地环境变量
 .env
@@ -28,3 +29,4 @@ expo-env.d.ts
 .DS_Store
 Thumbs.db
 *.log
+/shopping.sqlite*

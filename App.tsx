@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Alert, BackHandler, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView,
+  ActivityIndicator, Alert, AppState, BackHandler, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView,
   StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import ShotOcr from './modules/shot-ocr';
+import { AnniversariesScreen } from './src/AnniversariesScreen';
+import { ItemsScreen } from './src/ItemsScreen';
+import { PacketsScreen } from './src/PacketsScreen';
 import { PrivacyScreen } from './src/PrivacyScreen';
+import { ShoppingScreen } from './src/ShoppingScreen';
+import { singleSharedImage } from './src/incomingShare';
 import { dateLabel, extractSuggestions, nextHour, timeLabel, type Suggestion } from './src/recognize';
 import {
   createReminder, finishReminder, imageUri, loadReminders, ReminderPermissionError,
@@ -19,6 +25,11 @@ import { colors, Icon, ScannerIllustration } from './src/visuals';
 
 type Page = { kind: 'home' } | { kind: 'edit' } | { kind: 'detail'; id: string };
 type Filter = 'active' | 'completed';
+type Screenshot = { imageUri: string; imageExtension?: string };
+
+function removeSharedCopy(file: File) {
+  try { if (file.exists) file.delete(); } catch {}
+}
 
 function SourcePreview({ uri, sample, onPress }: { uri?: string; sample?: boolean; onPress?: () => void }) {
   if (!uri && !sample) return null;
@@ -76,7 +87,12 @@ function ReminderApp() {
   const [picker, setPicker] = useState<'date' | 'time' | null>(null);
   const [preview, setPreview] = useState<{ uri?: string; sample?: boolean } | null>(null);
   const [openedId, setOpenedId] = useState<string | null>(null);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [tool, setTool] = useState<'privacy' | 'items' | 'shopping' | 'packets' | 'anniversaries'>();
+  const [sharedImages, setSharedImages] = useState<File[]>([]);
+  const [sharedDraft, setSharedDraft] = useState<File>();
+  const draftCopy = page.kind === 'edit' && draft.imageUri === sharedDraft?.uri ? sharedDraft : undefined;
+
+  useEffect(() => () => { if (draftCopy) removeSharedCopy(draftCopy); }, [draftCopy]);
 
   useEffect(() => {
     if (page.kind === 'home') return;
@@ -111,12 +127,83 @@ function ReminderApp() {
   }, []);
 
   useEffect(() => {
-    if (loading || loadError || !openedId || busy || privacyOpen) return;
+    let mounted = true;
+    async function readIncomingShare() {
+      // Read only raw payloads so links never trigger remote resolution.
+      const sharing = await import('expo-sharing').catch(() => null);
+      if (!mounted || !sharing) return;
+      let payloads;
+      try {
+        payloads = sharing.getSharedPayloads();
+        if (!payloads.length) return;
+        sharing.clearSharedPayloads();
+      } catch {
+        return;
+      }
+
+      let destination: File | undefined;
+      try {
+        const containers = Platform.OS === 'ios'
+          ? Object.values(Paths.appleSharedContainers).map(directory => directory.uri) : [];
+        const image = singleSharedImage(payloads, Platform.OS, containers);
+        if (!image) {
+          Alert.alert('请选择一张图片', '请从系统分享菜单分享一张截图。');
+          return;
+        }
+        const source = new File(image.value);
+        const extension = image.value.match(/\.([a-z0-9]{2,5})$/i)?.[1]
+          ?? image.mimeType?.match(/^image\/([a-z0-9]{2,5})$/i)?.[1] ?? 'jpg';
+        const copy = new File(Paths.cache, `shared-shot-${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${extension}`);
+        destination = copy;
+        if (Platform.OS === 'ios') await source.move(copy);
+        else await source.copy(copy);
+        await Image.getSize(copy.uri);
+        if (mounted) setSharedImages(images => [...images, copy]);
+        else removeSharedCopy(copy);
+      } catch {
+        if (destination) removeSharedCopy(destination);
+        if (mounted) Alert.alert('无法读取分享的图片', '请尝试从相册重新分享这张截图。');
+      }
+    }
+    const links = Linking.addEventListener('url', ({ url }) => {
+      if (/^shotremind:\/\/expo-sharing\/?$/.test(url)) void readIncomingShare();
+    });
+    const state = AppState.addEventListener('change', next => {
+      if (next === 'active') void readIncomingShare();
+    });
+    void readIncomingShare();
+    return () => {
+      mounted = false;
+      links.remove();
+      state.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (loading || loadError || busy || tool || preview || page.kind === 'edit' || lock.current) return;
+    const [image] = sharedImages;
+    if (!image) return;
+    lock.current = true;
+    setBusy(true);
+    setSharedImages(images => images.slice(1));
+    void recognizeScreenshot({ imageUri: image.uri, imageExtension: image.extension.slice(1) }).then(() => {
+      setSharedDraft(image);
+    }).catch(() => {
+      removeSharedCopy(image);
+      Alert.alert('无法打开截图', '请重新分享这张截图。');
+    }).finally(() => {
+      lock.current = false;
+      setBusy(false);
+    });
+  }, [busy, loading, loadError, page.kind, preview, sharedImages, tool]);
+
+  useEffect(() => {
+    if (loading || loadError || !openedId || busy || tool || preview || page.kind === 'edit' || sharedImages.length || lock.current) return;
     if (reminders.some(item => item.id === openedId)) setPage({ kind: 'detail', id: openedId });
     else Alert.alert('找不到提醒', '这条提醒可能已被删除。');
     setOpenedId(null);
     Notifications.clearLastNotificationResponse();
-  }, [busy, loading, loadError, openedId, privacyOpen, reminders]);
+  }, [busy, loading, loadError, openedId, page.kind, preview, tool, reminders, sharedImages.length]);
 
   function goHome() {
     setPicker(null);
@@ -134,6 +221,15 @@ function ReminderApp() {
     setPage({ kind: 'edit' });
   }
 
+  async function recognizeScreenshot(source: Screenshot) {
+    try {
+      const recognized = (await ShotOcr?.recognize(source.imageUri))?.trim();
+      startDraft({ ...source, text: recognized ?? '' }, recognized ? '' : '没有识别到文字，你可以手动填写。');
+    } catch {
+      startDraft(source, '截图识别失败，你可以手动填写。');
+    }
+  }
+
   async function importScreenshot() {
     if (lock.current) return;
     lock.current = true;
@@ -145,13 +241,7 @@ function ReminderApp() {
       });
       if (result.canceled) return;
       const asset = result.assets[0];
-      const source = { imageUri: asset.uri, imageExtension: asset.fileName?.split('.').pop() ?? asset.uri.split('.').pop() };
-      try {
-        const recognized = (await ShotOcr?.recognize(asset.uri))?.trim();
-        startDraft({ ...source, text: recognized ?? '' }, recognized ? '' : '没有识别到文字，你可以手动填写。');
-      } catch {
-        startDraft(source, '截图识别失败，你可以手动填写。');
-      }
+      await recognizeScreenshot({ imageUri: asset.uri, imageExtension: asset.fileName?.split('.').pop() ?? asset.uri.split('.').pop() });
     } catch {
       Alert.alert('无法打开相册', '请检查相册访问权限后重试。');
     } finally {
@@ -248,15 +338,23 @@ function ReminderApp() {
                 </Pressable>
               </View>
             </>}
-            <Pressable style={[s.source, s.privacyEntry]} accessibilityRole="button" disabled={busy}
-              onPress={() => setPrivacyOpen(true)}>
-              <View style={s.emptyIcon}><Icon name="shield" color={colors.lime} size={20} /></View>
-              <View style={s.flex}>
-                <Text style={s.cardTitle}>发图前遮隐私</Text>
-                <Text style={s.caption}>遮住手机号、地址和姓名再分享</Text>
-              </View>
-              <Icon name="chevron" color={colors.muted} size={18} />
-            </Pressable>
+            {([
+              ['privacy', 'shield', '发图前遮隐私', '遮住手机号、地址和姓名再分享'],
+              ['items', 'box', '家里东西放哪了', '拍照记下位置，下次按名字找'],
+              ['shopping', 'cart', '家庭采购清单', '和家人共享，进超市先看未买'],
+              ['packets', 'folder', '出门办事资料包', '把材料、地址和预约截图放在一起'],
+              ['anniversaries', 'calendar', '纪念日', '记下重要日子，查看已过天数或倒计时'],
+            ] as const).map(([key, icon, title, caption]) => (
+              <Pressable key={key} style={[s.source, s.toolEntry]} accessibilityRole="button" disabled={busy}
+                onPress={() => setTool(key)}>
+                <View style={s.emptyIcon}><Icon name={icon} color={colors.lime} size={20} /></View>
+                <View style={s.flex}>
+                  <Text style={s.cardTitle}>{title}</Text>
+                  <Text style={s.caption}>{caption}</Text>
+                </View>
+                <Icon name="chevron" color={colors.muted} size={18} />
+              </Pressable>
+            ))}
             <View style={s.sectionHeader}>
               <Text accessibilityRole="header" style={s.sectionTitle}>{filter === 'active' ? '待办提醒' : '已完成'}</Text>
               <Text style={s.count}>{String(visible.length).padStart(2, '0')}</Text>
@@ -299,6 +397,7 @@ function ReminderApp() {
           <ScreenHeader label="创建提醒" onBack={busy ? () => {} : goHome} />
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.inner}>
             <Text accessibilityRole="header" style={s.heading}>确认提醒</Text>
+            {sharedImages.length > 0 && <Text style={s.caption}>收到新的分享截图，完成当前提醒后会打开。</Text>}
             <Text style={s.caption}>{notice || (candidate?.date
               ? '请核对识别结果。明天、下周等日期以导入当天为基准。'
               : draft.text ? '未识别到明确日期，请选择提醒时间。' : '填写事项和时间，到点会收到通知。')}</Text>
@@ -375,7 +474,11 @@ function ReminderApp() {
           </View>
         </>}
       </KeyboardAvoidingView>
-      {privacyOpen && <PrivacyScreen onClose={() => setPrivacyOpen(false)} />}
+      {tool === 'privacy' && <PrivacyScreen onClose={() => setTool(undefined)} />}
+      {tool === 'items' && <ItemsScreen onClose={() => setTool(undefined)} />}
+      {tool === 'shopping' && <ShoppingScreen onClose={() => setTool(undefined)} />}
+      {tool === 'packets' && <PacketsScreen onClose={() => setTool(undefined)} />}
+      {tool === 'anniversaries' && <AnniversariesScreen onClose={() => setTool(undefined)} />}
       <Modal visible={Boolean(preview)} animationType="fade" onRequestClose={() => setPreview(null)}>
         <SafeAreaView style={s.safe}>
           <View style={s.screenHeader}>
@@ -399,7 +502,7 @@ const s = StyleSheet.create({
   brandText: { color: colors.text, fontSize: 19, fontWeight: '800' },
   privacy: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 6, borderRadius: 99, borderWidth: 1, borderColor: colors.border },
   privacyText: { color: colors.muted, fontSize: 11, fontWeight: '600' },
-  privacyEntry: { marginTop: 10 },
+  toolEntry: { marginTop: 10 },
   homeBody: { paddingHorizontal: 22, paddingBottom: 20 },
   hero: { padding: 19, borderRadius: 26, backgroundColor: colors.lime, overflow: 'hidden' },
   heroArt: { position: 'absolute', right: 4, top: 28, opacity: 0.88 },
