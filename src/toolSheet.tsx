@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ModalSafeAreaView } from './ModalSafeAreaView';
 import { colors, Icon } from './visuals';
 
 export function ToolSheet({ title, back, busy, children }: {
@@ -8,7 +8,7 @@ export function ToolSheet({ title, back, busy, children }: {
 }) {
   return (
     <Modal visible animationType="slide" onRequestClose={back}>
-      <SafeAreaView style={styles.safe}>
+      <ModalSafeAreaView style={styles.safe}>
         <KeyboardAvoidingView style={styles.frame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.header}>
             <Pressable style={styles.back} accessibilityRole="button" accessibilityLabel="返回" disabled={busy} onPress={back}>
@@ -18,7 +18,7 @@ export function ToolSheet({ title, back, busy, children }: {
           </View>
           {children}
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </ModalSafeAreaView>
     </Modal>
   );
 }

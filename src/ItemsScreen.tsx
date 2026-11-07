@@ -3,7 +3,7 @@ import {
   ActivityIndicator, Alert, FlatList, Image, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform,
   Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ModalSafeAreaView } from './ModalSafeAreaView';
 import * as ImagePicker from 'expo-image-picker';
 import { deleteItem, findItems, itemPhotoUri, loadItems, saveItem, type ItemDraft, type StoredItem } from './items';
 import { colors, Icon } from './visuals';
@@ -99,7 +99,7 @@ export function ItemsScreen({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal visible animationType="slide" onRequestClose={back}>
-      <SafeAreaView style={s.safe}>
+      <ModalSafeAreaView style={s.safe}>
         <KeyboardAvoidingView style={s.frame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={s.header}>
             <Pressable accessibilityRole="button" accessibilityLabel={draft ? '返回物品列表' : '返回首页'}
@@ -179,7 +179,7 @@ export function ItemsScreen({ onClose }: { onClose: () => void }) {
             </Pressable>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </ModalSafeAreaView>
     </Modal>
   );
 }

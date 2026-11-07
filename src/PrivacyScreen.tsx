@@ -3,7 +3,7 @@ import {
   ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View,
   type GestureResponderEvent,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ModalSafeAreaView } from './ModalSafeAreaView';
 import { File } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import ShotOcr, { type PrivacyImage } from '../modules/shot-ocr';
@@ -91,7 +91,7 @@ export function PrivacyScreen({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal visible animationType="slide" onRequestClose={close}>
-      <SafeAreaView style={s.safe}>
+      <ModalSafeAreaView style={s.safe}>
         <View style={s.frame}>
           <View style={s.header}>
             <Pressable accessibilityRole="button" accessibilityLabel="返回首页" onPress={close} disabled={!!busy} style={s.back}>
@@ -154,7 +154,7 @@ export function PrivacyScreen({ onClose }: { onClose: () => void }) {
             </Pressable>
           </View>
         </View>
-      </SafeAreaView>
+      </ModalSafeAreaView>
     </Modal>
   );
 }

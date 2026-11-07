@@ -12,6 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 import ShotOcr from './modules/shot-ocr';
 import { AnniversariesScreen } from './src/AnniversariesScreen';
 import { ItemsScreen } from './src/ItemsScreen';
+import { ModalSafeAreaView } from './src/ModalSafeAreaView';
 import { PacketsScreen } from './src/PacketsScreen';
 import { PrivacyScreen } from './src/PrivacyScreen';
 import { ShoppingScreen } from './src/ShoppingScreen';
@@ -480,14 +481,14 @@ function ReminderApp() {
       {tool === 'packets' && <PacketsScreen onClose={() => setTool(undefined)} />}
       {tool === 'anniversaries' && <AnniversariesScreen onClose={() => setTool(undefined)} />}
       <Modal visible={Boolean(preview)} animationType="fade" onRequestClose={() => setPreview(null)}>
-        <SafeAreaView style={s.safe}>
+        <ModalSafeAreaView style={s.safe}>
           <View style={s.screenHeader}>
             <Pressable style={s.iconButton} accessibilityRole="button" accessibilityLabel="关闭原图" onPress={() => setPreview(null)}><Icon name="close" /></Pressable>
             <Text style={s.kicker}>{preview?.sample ? '群通知示例' : '原始截图'}</Text>
           </View>
           {preview?.uri ? <Image style={s.fullImage} source={{ uri: preview.uri }} resizeMode="contain" accessibilityLabel="提醒来源截图" />
             : <View style={s.sample}><Text style={s.cardTitle}>项目群 · 周会通知</Text><Text style={s.ocr}>{sampleText.split('\n').slice(1).join('\n')}</Text></View>}
-        </SafeAreaView>
+        </ModalSafeAreaView>
       </Modal>
     </SafeAreaView>
   );
