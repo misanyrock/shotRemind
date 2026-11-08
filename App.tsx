@@ -101,6 +101,8 @@ function ReminderApp() {
   const [tool, setTool] = useState<'privacy' | 'items' | 'shopping' | 'packets' | 'anniversaries'>();
   const [sharedImages, setSharedImages] = useState<File[]>([]);
   const [sharedDraft, setSharedDraft] = useState<File>();
+  const editScroll = useRef<ScrollView>(null);
+  const ocrInput = useRef<TextInput>(null);
   const draftCopy = page.kind === 'edit' && draft.imageUri === sharedDraft?.uri ? sharedDraft : undefined;
 
   useEffect(() => () => { if (draftCopy) removeSharedCopy(draftCopy); }, [draftCopy]);
@@ -315,10 +317,14 @@ function ReminderApp() {
   const candidate = suggestions[selected];
   const activeCount = reminders.filter(item => !item.completed).length;
 
+  function revealOcrInput() {
+    if (ocrInput.current?.isFocused()) editScroll.current?.scrollToEnd({ animated: false });
+  }
+
   return (
     <SafeAreaView style={s.safe}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      <KeyboardAvoidingView style={s.frame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={s.frame} behavior={Platform.OS === 'ios' || page.kind === 'edit' ? 'padding' : undefined}>
         {page.kind === 'home' && <>
           <View style={s.top}>
             <View style={s.brand}>
@@ -416,12 +422,12 @@ function ReminderApp() {
         </>}
         {page.kind === 'edit' && <>
           <ScreenHeader label="创建提醒" onBack={busy ? () => {} : goHome} />
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.inner}>
+          <ScrollView ref={editScroll} onLayout={revealOcrInput} keyboardShouldPersistTaps="handled" contentContainerStyle={s.inner}>
             <Text accessibilityRole="header" style={s.heading}>确认提醒</Text>
             {sharedImages.length > 0 && <Text style={s.caption}>收到新的分享截图，完成当前提醒后会打开。</Text>}
             <Text style={s.caption}>{notice || (candidate?.date
               ? '请核对识别结果。明天、下周等日期以导入当天为基准。'
-              : draft.text ? '未识别到明确日期，请选择提醒时间。' : '填写事项和时间，到点会收到通知。')}</Text>
+              : suggestions.length > 0 ? '未识别到明确日期，请选择提醒时间。' : '填写事项和时间，到点会收到通知。')}</Text>
             <SourcePreview uri={draft.imageUri} sample={draft.sample} onPress={() => setPreview({ uri: draft.imageUri, sample: draft.sample })} />
             {suggestions.length > 1 && <View style={s.field}>
               <Text style={s.fieldLabel}>识别到多条时间</Text>
@@ -470,9 +476,11 @@ function ReminderApp() {
                 {Platform.OS === 'ios' && <Pressable style={s.quickButton} accessibilityRole="button" onPress={() => setPicker(null)}><Text style={s.active}>确定</Text></Pressable>}
               </>}
             </View>
-            {!!draft.text && <View style={s.field}>
-              <Text style={s.fieldLabel}>识别文字</Text>
-              <Text selectable style={s.ocr}>{draft.text}</Text>
+            {(draft.imageUri || draft.sample) && <View style={s.field}>
+              <Text style={s.fieldLabel}>识别文字 · 可编辑</Text>
+              <TextInput ref={ocrInput} onFocus={revealOcrInput} accessibilityLabel="识别文字" style={[s.input, s.ocrInput]} multiline editable={!busy}
+                placeholder="可在这里补充截图中的文字" placeholderTextColor={colors.muted}
+                value={draft.text} onChangeText={text => setDraft(current => ({ ...current, text }))} />
             </View>}
           </ScrollView>
           <View style={s.footer}><Button label="保存提醒" icon="check" onPress={save} disabled={busy} /></View>
@@ -566,6 +574,7 @@ const styles = themed(colors => StyleSheet.create({
   choiceSelected: { borderColor: colors.accent, backgroundColor: colors.soft },
   warning: { color: colors.warning },
   ocr: { color: colors.text, fontSize: 14, lineHeight: 23, backgroundColor: colors.card, padding: 13, borderRadius: 12 },
+  ocrInput: { height: 120, textAlignVertical: 'top' },
   footer: { gap: 5, borderTopWidth: 1, borderColor: colors.border, paddingHorizontal: 22, paddingVertical: 10 },
   primary: { minHeight: 52, borderRadius: 14, padding: 11, backgroundColor: colors.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryText: { color: colors.ink, fontWeight: '800', fontSize: 16 },
