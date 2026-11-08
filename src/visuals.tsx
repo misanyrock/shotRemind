@@ -1,9 +1,5 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-
-export const colors = {
-  bg: '#131510', card: '#1C1F18', border: '#32362B', muted: '#A6AD99',
-  text: '#F4F6ED', lime: '#DEFF66', ink: '#171D0C', warning: '#F7C57B',
-};
+import { useTheme } from './ThemeProvider';
 
 const paths = {
   scan: 'M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3M7 12h10',
@@ -11,6 +7,7 @@ const paths = {
   box: 'M4 9v11h16V9M3 4h18v5H3zM10 13h4',
   camera: 'M4 7h4l2-3h4l2 3h4v13H4zM15 13.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
   search: 'M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0ZM15 15l5 5',
+  sun: 'M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M19 5l-1.5 1.5m-11 11L5 19',
   cart: 'M3 4h2l3 11h10l3-8H6M9 20h.01M17 20h.01',
   folder: 'M3 6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
   arrow: 'M4 12h15m-6-6 6 6-6 6',
@@ -28,10 +25,11 @@ const paths = {
   play: 'm9 5 11 7-11 7z',
 };
 
-export function Icon({ name, color = colors.text, size = 22 }: { name: keyof typeof paths; color?: string; size?: number }) {
+export function Icon({ name, color, size = 22 }: { name: keyof typeof paths; color?: string; size?: number }) {
+  const { colors } = useTheme();
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path d={paths[name]} stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d={paths[name]} stroke={color ?? colors.text} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }

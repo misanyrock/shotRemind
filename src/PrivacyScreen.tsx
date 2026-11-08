@@ -8,9 +8,13 @@ import { File } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import ShotOcr, { type PrivacyImage } from '../modules/shot-ocr';
 import { pixelBox, suggestMasks, type Mask } from './privacy';
-import { colors, Icon } from './visuals';
+import { Icon } from './visuals';
+import { useTheme } from './ThemeProvider';
+import { themed } from './theme';
 
 export function PrivacyScreen({ onClose }: { onClose: () => void }) {
+  const { colors, scheme } = useTheme();
+  const s = styles[scheme];
   const [image, setImage] = useState<PrivacyImage>();
   const [masks, setMasks] = useState<Mask[]>([]);
   const [busy, setBusy] = useState<'import' | 'share'>();
@@ -159,7 +163,7 @@ export function PrivacyScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
-const s = StyleSheet.create({
+const styles = themed(colors => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   frame: { flex: 1, width: '100%', maxWidth: 620, alignSelf: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 10 },
@@ -168,13 +172,13 @@ const s = StyleSheet.create({
   intro: { gap: 4, paddingHorizontal: 20, paddingBottom: 12 },
   caption: { color: colors.muted, fontSize: 13, lineHeight: 20 },
   body: { paddingHorizontal: 20, paddingBottom: 12 },
-  box: { position: 'absolute', borderColor: colors.lime },
-  corner: { position: 'absolute', width: 8, height: 8, borderRadius: 4, backgroundColor: colors.lime },
+  box: { position: 'absolute', borderColor: colors.brand },
+  corner: { position: 'absolute', width: 8, height: 8, borderRadius: 4, backgroundColor: colors.brand },
   footer: { gap: 8, padding: 10, paddingHorizontal: 20, borderTopWidth: 1, borderColor: colors.border },
   actions: { flexDirection: 'row', gap: 8 },
   secondary: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 44, borderRadius: 13, borderWidth: 1, borderColor: colors.border },
-  actionText: { color: colors.lime, fontSize: 14, fontWeight: '700' },
-  primary: { minHeight: 52, borderRadius: 14, padding: 10, backgroundColor: colors.lime, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  actionText: { color: colors.accent, fontSize: 14, fontWeight: '700' },
+  primary: { minHeight: 52, borderRadius: 14, padding: 10, backgroundColor: colors.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryText: { color: colors.ink, fontSize: 16, fontWeight: '800' },
   dim: { opacity: 0.55 },
-});
+}));

@@ -2,10 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { checkMaterial, deletePacket, loadPackets, packetImageUri, savePacket, type Packet, type PacketDraft } from './packets';
-import { styles as s, ToolButton, ToolSheet } from './toolSheet';
-import { colors, Icon } from './visuals';
+import { styles, ToolButton, ToolSheet } from './toolSheet';
+import { Icon } from './visuals';
+import { useTheme } from './ThemeProvider';
+import { themed } from './theme';
 
 export function PacketsScreen({ onClose }: { onClose: () => void }) {
+  const { colors, scheme } = useTheme();
+  const s = styles[scheme];
+  const local = localStyles[scheme];
   const [packets, setPackets] = useState<Packet[]>([]);
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading');
   const [id, setId] = useState<string>();
@@ -116,7 +121,7 @@ export function PacketsScreen({ onClose }: { onClose: () => void }) {
             </View>}
             {image && <Pressable style={s.card} accessibilityRole="button" accessibilityLabel="全屏查看预约截图" onPress={() => setPreview(true)}>
               <View style={s.row}>
-                <Icon name="image" color={colors.lime} size={20} />
+                <Icon name="image" color={colors.accent} size={20} />
                 <Text style={[s.text, local.grow]}>预约截图</Text>
                 <Icon name="chevron" color={colors.muted} size={18} />
               </View>
@@ -130,18 +135,18 @@ export function PacketsScreen({ onClose }: { onClose: () => void }) {
                 onPress={() => void run('无法保存确认状态', async () => {
                   setPackets(await checkMaterial(packets, selected.id, material.name, !material.checked));
                 })}>
-                <Icon name={material.checked ? 'done' : 'unchecked'} color={material.checked ? colors.lime : colors.muted} size={20} />
+                <Icon name={material.checked ? 'done' : 'unchecked'} color={material.checked ? colors.accent : colors.muted} size={20} />
                 <Text style={[s.text, local.grow]}>{material.name}</Text>
               </Pressable>
             ))}
             <ToolButton label="编辑资料包" secondary disabled={busy} onPress={() => edit(selected)} />
             <ToolButton label="删除资料包" secondary disabled={busy} onPress={() => remove(selected)} />
-          </> : status === 'loading' ? <ActivityIndicator color={colors.lime} />
+          </> : status === 'loading' ? <ActivityIndicator color={colors.accent} />
             : status === 'error' ? <ToolButton label="读取失败，轻点重试" secondary onPress={load} /> : <>
               {packets.length === 0 && <Text style={s.caption}>把材料、办事地址和预约截图放在一张卡片里。出门前勾选，到现场直接打开。</Text>}
               {packets.map(packet => (
                 <Pressable key={packet.id} accessibilityRole="button" style={[s.card, s.row]} onPress={() => setId(packet.id)}>
-                  <Icon name="folder" color={colors.lime} />
+                  <Icon name="folder" color={colors.accent} />
                   <View style={local.grow}>
                     <Text style={s.text}>{packet.title}</Text>
                     <Text style={s.caption}>{packet.materials.filter(material => material.checked).length}/{packet.materials.length} 项材料已确认{packet.imageName ? ' · 有预约截图' : ''}</Text>
@@ -159,9 +164,9 @@ export function PacketsScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
-const local = StyleSheet.create({
+const localStyles = themed(colors => StyleSheet.create({
   multiline: { minHeight: 110, textAlignVertical: 'top' },
   thumbnail: { width: '100%', height: 170, backgroundColor: colors.bg, borderRadius: 10 },
   fullImage: { width: '100%', flex: 1 },
   grow: { flex: 1 },
-});
+}));

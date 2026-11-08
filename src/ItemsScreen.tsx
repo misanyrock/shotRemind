@@ -6,9 +6,13 @@ import {
 import { ModalSafeAreaView } from './ModalSafeAreaView';
 import * as ImagePicker from 'expo-image-picker';
 import { deleteItem, findItems, itemPhotoUri, loadItems, saveItem, type ItemDraft, type StoredItem } from './items';
-import { colors, Icon } from './visuals';
+import { Icon } from './visuals';
+import { useTheme } from './ThemeProvider';
+import { themed } from './theme';
 
 export function ItemsScreen({ onClose }: { onClose: () => void }) {
+  const { colors, scheme } = useTheme();
+  const s = styles[scheme];
   const [items, setItems] = useState<StoredItem[]>([]);
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading');
   const [query, setQuery] = useState('');
@@ -112,7 +116,7 @@ export function ItemsScreen({ onClose }: { onClose: () => void }) {
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.form}>
               {photo && <Image source={{ uri: photo }} style={s.photo} resizeMode="contain" accessibilityLabel="物品照片" />}
               <Pressable accessibilityRole="button" style={s.secondary} disabled={busy} onPress={takePhoto}>
-                <Icon name="camera" size={18} color={colors.lime} />
+                <Icon name="camera" size={18} color={colors.accent} />
                 <Text style={s.actionText}>重拍照片</Text>
               </Pressable>
               <View style={s.field}>
@@ -160,12 +164,12 @@ export function ItemsScreen({ onClose }: { onClose: () => void }) {
                   <Icon name="chevron" size={18} color={colors.muted} />
                 </Pressable>
               )}
-              ListEmptyComponent={status === 'loading' ? <ActivityIndicator color={colors.lime} /> : status === 'error' ?
+              ListEmptyComponent={status === 'loading' ? <ActivityIndicator color={colors.accent} /> : status === 'error' ?
                 <Pressable accessibilityRole="button" style={s.secondary} onPress={load}>
                   <Text style={s.actionText}>读取失败，轻点重试</Text>
                 </Pressable> :
                 <View style={s.empty}>
-                  <Icon name="box" color={colors.lime} size={26} />
+                  <Icon name="box" color={colors.accent} size={26} />
                   <Text style={s.name}>{query.trim() ? '没有找到这个物品' : '还没有物品记录'}</Text>
                   <Text style={s.caption}>{query.trim() ? '试试搜索物品名的一部分。' : '从护照、钥匙或换季衣服开始。'}</Text>
                 </View>}
@@ -184,7 +188,7 @@ export function ItemsScreen({ onClose }: { onClose: () => void }) {
   );
 }
 
-const s = StyleSheet.create({
+const styles = themed(colors => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   frame: { flex: 1, width: '100%', maxWidth: 620, alignSelf: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 10 },
@@ -205,10 +209,10 @@ const s = StyleSheet.create({
   field: { gap: 6 },
   input: { color: colors.text, backgroundColor: colors.card, borderRadius: 13, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, minHeight: 50, fontSize: 16 },
   secondary: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', minHeight: 44, borderRadius: 13, borderWidth: 1, borderColor: colors.border },
-  actionText: { color: colors.lime, fontSize: 14, fontWeight: '700' },
-  deleteText: { color: '#F6AB9D', fontSize: 14, fontWeight: '700' },
+  actionText: { color: colors.accent, fontSize: 14, fontWeight: '700' },
+  deleteText: { color: colors.danger, fontSize: 14, fontWeight: '700' },
   footer: { padding: 10, paddingHorizontal: 20, borderTopWidth: 1, borderColor: colors.border },
-  primary: { minHeight: 52, borderRadius: 14, padding: 10, backgroundColor: colors.lime, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  primary: { minHeight: 52, borderRadius: 14, padding: 10, backgroundColor: colors.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryText: { color: colors.ink, fontSize: 16, fontWeight: '800' },
   dim: { opacity: 0.55 },
-});
+}));

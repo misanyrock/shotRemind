@@ -11,6 +11,7 @@ import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import ShotOcr from './modules/shot-ocr';
 import { AnniversariesScreen } from './src/AnniversariesScreen';
+import { AppearanceScreen } from './src/AppearanceScreen';
 import { ItemsScreen } from './src/ItemsScreen';
 import { ModalSafeAreaView } from './src/ModalSafeAreaView';
 import { PacketsScreen } from './src/PacketsScreen';
@@ -22,9 +23,11 @@ import {
   createReminder, finishReminder, imageUri, loadReminders, ReminderPermissionError,
   sampleText, type Draft, type Reminder,
 } from './src/reminders';
-import { colors, Icon, ScannerIllustration } from './src/visuals';
+import { Icon, ScannerIllustration } from './src/visuals';
+import { ThemeProvider, useTheme } from './src/ThemeProvider';
+import { themed } from './src/theme';
 
-type Page = { kind: 'home' } | { kind: 'edit' } | { kind: 'detail'; id: string };
+type Page = { kind: 'home' } | { kind: 'edit' } | { kind: 'detail'; id: string } | { kind: 'appearance' };
 type Filter = 'active' | 'completed';
 type Screenshot = { imageUri: string; imageExtension?: string };
 
@@ -33,10 +36,12 @@ function removeSharedCopy(file: File) {
 }
 
 function SourcePreview({ uri, sample, onPress }: { uri?: string; sample?: boolean; onPress?: () => void }) {
+  const { colors, scheme } = useTheme();
+  const s = styles[scheme];
   if (!uri && !sample) return null;
   return (
     <Pressable style={s.source} onPress={onPress} accessibilityRole="button" accessibilityLabel="查看原图">
-      {uri ? <Image source={{ uri }} style={s.thumb} /> : <View style={[s.thumb, s.center]}><Icon name="image" color={colors.lime} /></View>}
+      {uri ? <Image source={{ uri }} style={s.thumb} /> : <View style={[s.thumb, s.center]}><Icon name="image" color={colors.accent} /></View>}
       <View style={s.flex}>
         <Text style={s.cardTitle}>{sample ? '群通知示例' : '原始截图'}</Text>
         <Text style={s.caption}>轻点查看{sample ? '示例内容' : '完整图片'}</Text>
@@ -49,6 +54,8 @@ function SourcePreview({ uri, sample, onPress }: { uri?: string; sample?: boolea
 function Button({ label, onPress, icon, disabled }: {
   label: string; onPress: () => void; icon: 'plus' | 'image' | 'check'; disabled?: boolean;
 }) {
+  const { colors, scheme } = useTheme();
+  const s = styles[scheme];
   return (
     <Pressable disabled={disabled} accessibilityRole="button" onPress={onPress}
       style={({ pressed }) => [s.primary, (disabled || pressed) && s.dim]}>
@@ -59,6 +66,7 @@ function Button({ label, onPress, icon, disabled }: {
 }
 
 function ScreenHeader({ label, onBack }: { label: string; onBack: () => void }) {
+  const s = styles[useTheme().scheme];
   return (
     <View style={s.screenHeader}>
       <Pressable style={s.iconButton} accessibilityRole="button" accessibilityLabel="返回提醒列表" onPress={onBack}>
@@ -70,10 +78,12 @@ function ScreenHeader({ label, onBack }: { label: string; onBack: () => void }) 
 }
 
 export default function App() {
-  return <SafeAreaProvider><StatusBar style="light" /><ReminderApp /></SafeAreaProvider>;
+  return <ThemeProvider><SafeAreaProvider><ReminderApp /></SafeAreaProvider></ThemeProvider>;
 }
 
 function ReminderApp() {
+  const { colors, scheme } = useTheme();
+  const s = styles[scheme];
   const [page, setPage] = useState<Page>({ kind: 'home' });
   const [filter, setFilter] = useState<Filter>('active');
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -307,6 +317,7 @@ function ReminderApp() {
 
   return (
     <SafeAreaView style={s.safe}>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       <KeyboardAvoidingView style={s.frame} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {page.kind === 'home' && <>
           <View style={s.top}>
@@ -314,7 +325,12 @@ function ReminderApp() {
               <View style={s.brandIcon}><Icon name="scan" size={20} color={colors.ink} /></View>
               <Text style={s.brandText}>截个提醒</Text>
             </View>
-            <View style={s.privacy}><Icon name="shield" size={14} color={colors.muted} /><Text style={s.privacyText}>本地识别</Text></View>
+            <View style={s.headerActions}>
+              <View style={s.privacy}><Icon name="shield" size={14} color={colors.muted} /><Text style={s.privacyText}>本地识别</Text></View>
+              <Pressable accessibilityRole="button" accessibilityLabel="外观设置" style={s.iconButton} disabled={busy} onPress={() => setPage({ kind: 'appearance' })}>
+                <Icon name="sun" size={20} />
+              </Pressable>
+            </View>
           </View>
           <ScrollView contentContainerStyle={s.homeBody} showsVerticalScrollIndicator={false}>
             {filter === 'active' && <>
@@ -325,17 +341,17 @@ function ReminderApp() {
                 <Text style={s.heroCaption}>从截图里提取事项和时间</Text>
                 <Pressable disabled={busy || loading || loadError} onPress={importScreenshot} accessibilityRole="button"
                   style={({ pressed }) => [s.heroAction, (pressed || busy || loading || loadError) && s.dim]}>
-                  {busy ? <ActivityIndicator color={colors.lime} /> : <Icon name="image" size={20} color={colors.lime} />}
+                  {busy ? <ActivityIndicator color={colors.brand} /> : <Icon name="image" size={20} color={colors.brand} />}
                   <Text style={s.heroActionText}>{busy ? '正在读取截图…' : '选择截图'}</Text>
-                  <Icon name="arrow" size={18} color={colors.lime} />
+                  <Icon name="arrow" size={18} color={colors.brand} />
                 </Pressable>
               </View>
               <View style={s.quick}>
                 <Pressable disabled={loading || loadError || busy} style={s.quickButton} accessibilityRole="button" onPress={() => startDraft({})}>
-                  <Icon name="plus" color={colors.lime} size={18} /><Text style={s.quickText}>手动添加</Text>
+                  <Icon name="plus" color={colors.accent} size={18} /><Text style={s.quickText}>手动添加</Text>
                 </Pressable>
                 <Pressable disabled={loading || loadError || busy} style={s.quickButton} accessibilityRole="button" onPress={() => startDraft({ text: sampleText, sample: true })}>
-                  <Icon name="play" color={colors.lime} size={17} /><Text style={s.quickText}>体验示例</Text>
+                  <Icon name="play" color={colors.accent} size={17} /><Text style={s.quickText}>体验示例</Text>
                 </Pressable>
               </View>
             </>}
@@ -348,7 +364,7 @@ function ReminderApp() {
             ] as const).map(([key, icon, title, caption]) => (
               <Pressable key={key} style={[s.source, s.toolEntry]} accessibilityRole="button" disabled={busy}
                 onPress={() => setTool(key)}>
-                <View style={s.emptyIcon}><Icon name={icon} color={colors.lime} size={20} /></View>
+                <View style={s.emptyIcon}><Icon name={icon} color={colors.accent} size={20} /></View>
                 <View style={s.flex}>
                   <Text style={s.cardTitle}>{title}</Text>
                   <Text style={s.caption}>{caption}</Text>
@@ -360,12 +376,12 @@ function ReminderApp() {
               <Text accessibilityRole="header" style={s.sectionTitle}>{filter === 'active' ? '待办提醒' : '已完成'}</Text>
               <Text style={s.count}>{String(visible.length).padStart(2, '0')}</Text>
             </View>
-            {loading ? <ActivityIndicator color={colors.lime} /> : loadError ?
+            {loading ? <ActivityIndicator color={colors.accent} /> : loadError ?
               <Pressable onPress={load} style={s.empty} accessibilityRole="button">
                 <Text style={s.cardTitle}>读取失败，轻点重试</Text>
               </Pressable> : visible.length === 0 ?
               <View style={s.empty}>
-                <View style={s.emptyIcon}><Icon name={filter === 'active' ? 'bell' : 'done'} color={colors.lime} size={21} /></View>
+                <View style={s.emptyIcon}><Icon name={filter === 'active' ? 'bell' : 'done'} color={colors.accent} size={21} /></View>
                 <Text style={s.cardTitle}>{filter === 'active' ? '还没有待办提醒' : '还没有完成的提醒'}</Text>
                 <Text style={s.caption}>{filter === 'active' ? '群通知、预约、缴费、取件，都可以截图记下。' : '标为完成的事项会出现在这里。'}</Text>
               </View> :
@@ -374,7 +390,7 @@ function ReminderApp() {
                 const overdue = !item.completed && item.date <= Date.now();
                 return (
                   <Pressable key={item.id} onPress={() => setPage({ kind: 'detail', id: item.id })} accessibilityRole="button" style={s.reminder}>
-                    <View style={s.emptyIcon}><Icon name={item.completed ? 'done' : item.imageName || item.sample ? 'image' : 'bell'} color={colors.lime} size={19} /></View>
+                    <View style={s.emptyIcon}><Icon name={item.completed ? 'done' : item.imageName || item.sample ? 'image' : 'bell'} color={colors.accent} size={19} /></View>
                     <View style={s.flex}>
                       <Text style={s.cardTitle} numberOfLines={1}>{item.title}</Text>
                       <Text style={[s.caption, overdue && s.warning]}>{dateLabel(date)} · {timeLabel(date)}{overdue ? ' · 已到期' : ''}</Text>
@@ -387,13 +403,17 @@ function ReminderApp() {
           <View style={s.tabs}>
             {(['active', 'completed'] as const).map(tab => (
               <Pressable key={tab} style={s.tab} onPress={() => setFilter(tab)} accessibilityRole="tab" accessibilityState={{ selected: tab === filter }}>
-                <Icon name={tab === 'active' ? 'bell' : 'done'} size={20} color={tab === filter ? colors.lime : colors.muted} />
+                <Icon name={tab === 'active' ? 'bell' : 'done'} size={20} color={tab === filter ? colors.accent : colors.muted} />
                 <Text style={[s.tabText, tab === filter && s.active]}>{tab === 'active' ? `待办${activeCount ? ' ' + activeCount : ''}` : '已完成'}</Text>
               </Pressable>
             ))}
           </View>
         </>}
 
+        {page.kind === 'appearance' && <>
+          <ScreenHeader label="外观设置" onBack={goHome} />
+          <AppearanceScreen />
+        </>}
         {page.kind === 'edit' && <>
           <ScreenHeader label="创建提醒" onBack={busy ? () => {} : goHome} />
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.inner}>
@@ -424,16 +444,16 @@ function ReminderApp() {
               <Text style={s.fieldLabel}>提醒时间</Text>
               <View style={s.dateRow}>
                 <Pressable style={s.dateButton} accessibilityRole="button" accessibilityLabel="选择日期" onPress={() => setPicker('date')}>
-                  <Icon name="calendar" size={19} color={colors.lime} /><Text style={s.cardTitle}>{draft.date.getFullYear()}年{dateLabel(draft.date)}</Text>
+                  <Icon name="calendar" size={19} color={colors.accent} /><Text style={s.cardTitle}>{draft.date.getFullYear()}年{dateLabel(draft.date)}</Text>
                 </Pressable>
                 <Pressable style={s.dateButton} accessibilityRole="button" accessibilityLabel="选择时间" onPress={() => setPicker('time')}>
-                  <Icon name="clock" size={19} color={colors.lime} /><Text style={s.cardTitle}>{timeLabel(draft.date)}</Text>
+                  <Icon name="clock" size={19} color={colors.accent} /><Text style={s.cardTitle}>{timeLabel(draft.date)}</Text>
                 </Pressable>
               </View>
               {candidate?.date && !candidate.hasTime && <Text style={s.caption}>原文仅识别到日期，已预填 09:00。</Text>}
               {draft.date.getTime() <= Date.now() && <Text style={[s.caption, s.warning]}>这个时间已过，请调整后保存。</Text>}
               {picker && <>
-                <DateTimePicker value={draft.date} mode={picker} is24Hour themeVariant="dark"
+                <DateTimePicker value={draft.date} mode={picker} is24Hour themeVariant={scheme}
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onValueChange={(_event, value) => {
                     if (Platform.OS !== 'ios') setPicker(null);
@@ -462,7 +482,7 @@ function ReminderApp() {
           <ScreenHeader label={detail.completed ? '已完成' : '提醒详情'} onBack={busy ? () => {} : goHome} />
           <ScrollView contentContainerStyle={s.inner}>
             <Text accessibilityRole="header" style={s.heading}>{detail.title}</Text>
-            <View style={s.source}><Icon name="clock" color={colors.lime} /><Text style={s.cardTitle}>{new Date(detail.date).getFullYear()}年{dateLabel(new Date(detail.date))} · {timeLabel(new Date(detail.date))}</Text></View>
+            <View style={s.source}><Icon name="clock" color={colors.accent} /><Text style={s.cardTitle}>{new Date(detail.date).getFullYear()}年{dateLabel(new Date(detail.date))} · {timeLabel(new Date(detail.date))}</Text></View>
             <SourcePreview uri={detailUri} sample={detail.sample} onPress={() => setPreview({ uri: detailUri, sample: detail.sample })} />
             {!!detail.text && <View style={s.field}><Text style={s.fieldLabel}>识别文字</Text><Text selectable style={s.ocr}>{detail.text}</Text></View>}
           </ScrollView>
@@ -494,46 +514,47 @@ function ReminderApp() {
   );
 }
 
-const s = StyleSheet.create({
+const styles = themed(colors => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   frame: { flex: 1, width: '100%', maxWidth: 620, alignSelf: 'center' },
   top: { paddingHorizontal: 22, paddingTop: 12, paddingBottom: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
-  brandIcon: { width: 35, height: 35, borderRadius: 10, backgroundColor: colors.lime, alignItems: 'center', justifyContent: 'center' },
+  brandIcon: { width: 35, height: 35, borderRadius: 10, backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center' },
   brandText: { color: colors.text, fontSize: 19, fontWeight: '800' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   privacy: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 6, borderRadius: 99, borderWidth: 1, borderColor: colors.border },
   privacyText: { color: colors.muted, fontSize: 11, fontWeight: '600' },
   toolEntry: { marginTop: 10 },
   homeBody: { paddingHorizontal: 22, paddingBottom: 20 },
-  hero: { padding: 19, borderRadius: 26, backgroundColor: colors.lime, overflow: 'hidden' },
+  hero: { padding: 19, borderRadius: 26, backgroundColor: colors.brand, overflow: 'hidden' },
   heroArt: { position: 'absolute', right: 4, top: 28, opacity: 0.88 },
   heroKicker: { color: '#354514', fontSize: 10, fontWeight: '800', letterSpacing: 1.4 },
   heroTitle: { color: colors.ink, fontSize: 39, fontWeight: '900', letterSpacing: -1, marginTop: 13, marginBottom: 5, alignSelf: 'flex-start' },
   heroCaption: { color: '#354514', fontSize: 13, fontWeight: '600' },
   heroAction: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 13, minHeight: 52, borderRadius: 15, backgroundColor: colors.ink, marginTop: 18 },
-  heroActionText: { flex: 1, color: colors.lime, fontSize: 16, fontWeight: '800' },
+  heroActionText: { flex: 1, color: colors.brand, fontSize: 16, fontWeight: '800' },
   quick: { flexDirection: 'row', gap: 10, marginTop: 10 },
   quickButton: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, minHeight: 47, borderWidth: 1, borderColor: colors.border, borderRadius: 13, paddingHorizontal: 9, paddingVertical: 7 },
   quickText: { color: colors.text, fontSize: 13, fontWeight: '600', flexShrink: 1 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, marginBottom: 12 },
   sectionTitle: { color: colors.text, fontSize: 22, fontWeight: '800' },
-  count: { color: colors.lime, borderColor: colors.border, borderWidth: 1, fontVariant: ['tabular-nums'], borderRadius: 8, fontSize: 12, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 4 },
+  count: { color: colors.accent, borderColor: colors.border, borderWidth: 1, fontVariant: ['tabular-nums'], borderRadius: 8, fontSize: 12, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 4 },
   empty: { alignItems: 'center', gap: 8, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 18 },
-  emptyIcon: { width: 40, height: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: '#2B3520' },
+  emptyIcon: { width: 40, height: 40, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.soft },
   caption: { color: colors.muted, fontSize: 13, lineHeight: 20 },
   cardTitle: { color: colors.text, fontSize: 15, fontWeight: '700', flexShrink: 1 },
   reminder: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13, marginBottom: 8, borderRadius: 15, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   tabs: { flexDirection: 'row', borderTopWidth: 1, borderColor: colors.border, paddingTop: 4, paddingHorizontal: 20 },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 49, gap: 3 },
   tabText: { fontSize: 11, fontWeight: '700', color: colors.muted },
-  active: { color: colors.lime, fontWeight: '700' },
+  active: { color: colors.accent, fontWeight: '700' },
   screenHeader: { paddingHorizontal: 22, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 13 },
   iconButton: { height: 46, width: 46, borderRadius: 13, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   kicker: { color: colors.muted, fontSize: 14, fontWeight: '700' },
   inner: { padding: 22, gap: 15 },
   heading: { color: colors.text, fontSize: 32, fontWeight: '900' },
   source: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 16 },
-  thumb: { width: 50, height: 50, borderRadius: 9, backgroundColor: '#2B3520' },
+  thumb: { width: 50, height: 50, borderRadius: 9, backgroundColor: colors.soft },
   center: { alignItems: 'center', justifyContent: 'center' },
   flex: { flex: 1 },
   field: { gap: 9 },
@@ -542,15 +563,15 @@ const s = StyleSheet.create({
   dateRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   dateButton: { flexGrow: 1, flexDirection: 'row', alignItems: 'center', minHeight: 48, gap: 8, borderRadius: 13, borderWidth: 1, borderColor: colors.border, padding: 10, backgroundColor: colors.card },
   choice: { borderRadius: 10, borderWidth: 1, borderColor: colors.border, padding: 10 },
-  choiceSelected: { borderColor: colors.lime, backgroundColor: '#2B3520' },
+  choiceSelected: { borderColor: colors.accent, backgroundColor: colors.soft },
   warning: { color: colors.warning },
   ocr: { color: colors.text, fontSize: 14, lineHeight: 23, backgroundColor: colors.card, padding: 13, borderRadius: 12 },
   footer: { gap: 5, borderTopWidth: 1, borderColor: colors.border, paddingHorizontal: 22, paddingVertical: 10 },
-  primary: { minHeight: 52, borderRadius: 14, padding: 11, backgroundColor: colors.lime, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  primary: { minHeight: 52, borderRadius: 14, padding: 11, backgroundColor: colors.brand, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryText: { color: colors.ink, fontWeight: '800', fontSize: 16 },
   dim: { opacity: 0.65 },
   deleteButton: { alignItems: 'center', justifyContent: 'center', minHeight: 46 },
-  deleteText: { color: '#F6AB9D', fontSize: 14, fontWeight: '700' },
+  deleteText: { color: colors.danger, fontSize: 14, fontWeight: '700' },
   fullImage: { width: '100%', flex: 1 },
   sample: { padding: 18, gap: 10, margin: 22, borderRadius: 18, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-});
+}));

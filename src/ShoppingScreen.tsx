@@ -3,12 +3,15 @@ import { ActivityIndicator, Alert, AppState, Pressable, ScrollView, Share, Text,
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createShoppingSession, invitePattern, isShoppingSession, requestShoppingList, shoppingConfigured,
   type ShoppingItem, type ShoppingSession, type ShoppingSnapshot } from './shopping';
-import { styles as s, ToolButton, ToolSheet } from './toolSheet';
-import { colors, Icon } from './visuals';
+import { styles, ToolButton, ToolSheet } from './toolSheet';
+import { Icon } from './visuals';
+import { useTheme } from './ThemeProvider';
 
 const key = 'shot-remind/shopping-v1';
 
 export function ShoppingScreen({ onClose }: { onClose: () => void }) {
+  const { colors, scheme } = useTheme();
+  const s = styles[scheme];
   const [session, setSession] = useState<ShoppingSession>();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -149,7 +152,7 @@ export function ShoppingScreen({ onClose }: { onClose: () => void }) {
   return (
     <ToolSheet title="家庭采购清单" busy={busy} back={() => { if (!lock.current) onClose(); }}>
       <ScrollView contentContainerStyle={s.body} keyboardShouldPersistTaps="handled">
-        {loading ? <ActivityIndicator color={colors.lime} /> : !session ? <>
+        {loading ? <ActivityIndicator color={colors.accent} /> : !session ? <>
           <Text style={s.caption}>{shoppingConfigured ? '创建清单后，把邀请码发给家人。你们的添加和勾选会同步。' : '共享服务尚未配置，连接服务后即可创建或加入清单。'}</Text>
           <ToolButton label="创建共享清单" disabled={busy || !shoppingConfigured} onPress={() => connect(false)} />
           <TextInput style={s.input} accessibilityLabel="邀请码" placeholder="粘贴邀请码或邀请消息" placeholderTextColor={colors.muted}
@@ -160,17 +163,17 @@ export function ShoppingScreen({ onClose }: { onClose: () => void }) {
             : sync === 'checking' && shoppingConfigured ? '正在同步 · 显示上次记录' : '暂时离线 · 显示上次记录'}</Text>
           <View style={s.row}>
             <Pressable style={s.card} accessibilityRole="tab" accessibilityState={{ selected: !bought }} onPress={() => setBought(false)}>
-              <Text style={[s.text, !bought && { color: colors.lime }]}>未买 {remaining}</Text>
+              <Text style={[s.text, !bought && { color: colors.accent }]}>未买 {remaining}</Text>
             </Pressable>
             <Pressable style={s.card} accessibilityRole="tab" accessibilityState={{ selected: bought }} onPress={() => setBought(true)}>
-              <Text style={[s.text, bought && { color: colors.lime }]}>已买 {items.length - remaining}</Text>
+              <Text style={[s.text, bought && { color: colors.accent }]}>已买 {items.length - remaining}</Text>
             </Pressable>
           </View>
           {items.filter(item => item.bought === bought).map(item => (
             <View key={item.id} style={[s.card, s.row]}>
               <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: item.bought }} style={[s.row, { flex: 1, minHeight: 44 }]}
                 disabled={unavailable} onPress={() => change('/list/' + item.id, 'PATCH', { bought: !item.bought })}>
-                <Icon name={item.bought ? 'done' : 'unchecked'} size={21} color={item.bought ? colors.lime : colors.muted} />
+                <Icon name={item.bought ? 'done' : 'unchecked'} size={21} color={item.bought ? colors.accent : colors.muted} />
                 <Text style={[s.text, { flex: 1 }]}>{item.name}</Text>
               </Pressable>
               <Pressable accessibilityRole="button" accessibilityLabel={`移除${item.name}`} style={s.iconButton} disabled={unavailable} onPress={() => confirmRemove(item)}>

@@ -3,13 +3,16 @@ import { ActivityIndicator, Alert, AppState, Keyboard, Platform, Pressable, Scro
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { anniversaryDate, anniversaryDistance, calendarDay, dateForPicker, type Anniversary } from './anniversaries';
-import { styles as s, ToolButton, ToolSheet } from './toolSheet';
-import { colors, Icon } from './visuals';
+import { styles, ToolButton, ToolSheet } from './toolSheet';
+import { Icon } from './visuals';
+import { useTheme } from './ThemeProvider';
 
 const storageKey = 'shot-remind/anniversaries-v1';
 type Draft = Pick<Anniversary, 'title' | 'day'> & { id?: string };
 
 export function AnniversariesScreen({ onClose }: { onClose: () => void }) {
+  const { colors, scheme } = useTheme();
+  const s = styles[scheme];
   const [events, setEvents] = useState<Anniversary[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [draft, setDraft] = useState<Draft>();
@@ -109,11 +112,11 @@ export function AnniversariesScreen({ onClose }: { onClose: () => void }) {
           <Text style={s.caption}>事件日期</Text>
           <Pressable style={[s.card, s.row]} accessibilityRole="button" accessibilityLabel={`选择事件日期，${anniversaryDate(draft.day)}`}
             disabled={busy} onPress={() => { Keyboard.dismiss(); setPicking(true); }}>
-            <Icon name="calendar" size={20} color={colors.lime} />
+            <Icon name="calendar" size={20} color={colors.accent} />
             <Text style={s.text}>{anniversaryDate(draft.day)}</Text>
           </Pressable>
           {picking && <>
-            <DateTimePicker value={dateForPicker(draft.day)} mode="date" themeVariant="dark"
+            <DateTimePicker value={dateForPicker(draft.day)} mode="date" themeVariant={scheme}
               display={Platform.OS === 'ios' ? 'spinner' : 'default'} disabled={busy}
               onValueChange={(_event, date) => {
                 if (Platform.OS !== 'ios') setPicking(false);
@@ -123,7 +126,7 @@ export function AnniversariesScreen({ onClose }: { onClose: () => void }) {
           </>}
           <Text style={s.caption}>{anniversaryDistance(draft.day, today)}</Text>
           {draft.id && <ToolButton label="删除纪念日" secondary disabled={busy} onPress={() => { if (draft.id) remove(draft.id); }} />}
-        </> : status === 'loading' ? <ActivityIndicator color={colors.lime} />
+        </> : status === 'loading' ? <ActivityIndicator color={colors.accent} />
           : status === 'error' ? <ToolButton label="读取失败，轻点重试" secondary onPress={load} />
           : events.length === 0 ? <View style={s.card}>
             <Text style={s.text}>还没有纪念日</Text>
@@ -136,7 +139,7 @@ export function AnniversariesScreen({ onClose }: { onClose: () => void }) {
                   <View style={{ flex: 1, gap: 4 }}>
                     <Text style={s.text}>{event.title}</Text>
                     <Text style={s.caption}>{anniversaryDate(event.day)}</Text>
-                    <Text style={[s.text, { color: colors.lime }]}>{anniversaryDistance(event.day, today)}</Text>
+                    <Text style={[s.text, { color: colors.accent }]}>{anniversaryDistance(event.day, today)}</Text>
                   </View>
                   <Icon name="chevron" size={18} color={colors.muted} />
                 </Pressable>

@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "icon": "./assets/app-icon.png",
     "scheme": "shotremind",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "backgroundColor": "#131510",
     "platforms": [
       "ios",
