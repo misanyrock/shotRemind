@@ -13,7 +13,11 @@
     ],
     "ios": {
       "bundleIdentifier": "app.shotremind.mobile",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
+        "CFBundleLocalizations": ["zh-Hans"]
+      }
     },
     "android": {
       "package": "app.shotremind.mobile",
