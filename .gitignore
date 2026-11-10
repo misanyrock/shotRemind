@@ -10,6 +10,7 @@ expo-env.d.ts
 # Expo Prebuild 生成的根目录工程
 /ios/
 /android/
+/modules/
 .gradle/
 
 # 本地环境变量
